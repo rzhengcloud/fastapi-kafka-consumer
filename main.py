@@ -1,7 +1,7 @@
 from random import randint
 from typing import Set, Any
 from fastapi import FastAPI
-from kafka import TopicPartition
+from aiokafka import TopicPartition
 
 import uvicorn
 import aiokafka
@@ -22,7 +22,7 @@ _state = 0
 # env variables
 KAFKA_TOPIC = os.getenv('KAFKA_TOPIC')
 KAFKA_CONSUMER_GROUP_PREFIX = os.getenv('KAFKA_CONSUMER_GROUP_PREFIX', 'group')
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '127.0.0.1:9092')
 
 # initialize logger
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
@@ -62,7 +62,10 @@ async def initialize():
               f' and using bootstrap servers {KAFKA_BOOTSTRAP_SERVERS}')
     consumer = aiokafka.AIOKafkaConsumer(KAFKA_TOPIC, loop=loop,
                                          bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                                         group_id=group_id)
+                                         group_id=group_id,
+                                         heartbeat_interval_ms=3000,   # Sends a "pulse" every 3 seconds
+                                         session_timeout_ms=10000      # If no pulse for 10s, consider the app dead
+                                         )
     # get cluster layout and join group
     await consumer.start()
 
@@ -113,10 +116,25 @@ async def send_consumer_message(consumer):
 
 
 def _update_state(message: Any) -> None:
-    value = json.loads(message.value)
-    global _state
-    _state = value['state']
+    # 1. Check if the message is empty to avoid json.loads error
+    if not message.value:
+        log.warning("Skipping empty message (null payload).")
+        return
 
+    try:
+        # 2. Try to decode the JSON
+        value = json.loads(message.value)
+        
+        # 3. Check if 'state' exists in the dictionary
+        if 'state' in value:
+            global _state
+            _state = value['state']
+            log.info(f"State updated to: {_state}")
+        else:
+            log.warning(f"JSON received, but 'state' key missing: {value}")
+            
+    except json.JSONDecodeError:
+        log.error(f"Failed to decode JSON. Raw value: {message.value}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

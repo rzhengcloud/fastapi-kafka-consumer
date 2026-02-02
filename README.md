@@ -89,3 +89,31 @@ This is useful to guarantee that the consumer does not miss on previously publis
 
 Each instance of the Web API will have it's own consumer group (they share the same group name prefix + a random id), so that each instance of the API receives the same `state` updates.
   
+
+
+
+export KAFKA_TOPIC=test-topic
+run `python main.py`
+
+`docker-compose up -d`
+
+```
+echo '{"state": 77}' | docker exec -i kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic test-topic
+```
+
+```
+2026-02-02 11:31:31,789 - INFO - Updating subscribed topics to: frozenset({'test-topic'})
+2026-02-02 11:31:31,822 - INFO - Discovered coordinator 1 for group group-3955
+2026-02-02 11:31:31,822 - INFO - Revoking previously assigned partitions set() for group group-3955
+2026-02-02 11:31:31,822 - INFO - (Re-)joining group group-3955
+2026-02-02 11:31:31,827 - INFO - Joined group 'group-3955' (generation 1) with member_id aiokafka-0.13.0-bcc1c2f7-b6c5-4e83-b519-ca14c02ea2bd
+2026-02-02 11:31:31,827 - INFO - Elected group leader -- performing partition assignments using roundrobin
+2026-02-02 11:31:31,836 - INFO - Successfully synced group group-3955 with generation 1
+2026-02-02 11:31:31,836 - INFO - Setting newly assigned partitions {TopicPartition(topic='test-topic', partition=0)} for group group-3955
+2026-02-02 11:31:31,842 - INFO - Initializing API with data from msg: ConsumerRecord(topic='test-topic', partition=0, offset=0, timestamp=1770060680415, timestamp_type=0, key=None, value=b'{"state": 77}', checksum=None, serialized_key_size=-1, serialized_value_size=13, headers=())
+2026-02-02 11:31:31,842 - INFO - State updated to: 77
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-02-02 11:31:36,264 - INFO - Consumed msg: ConsumerRecord(topic='test-topic', partition=0, offset=1, timestamp=1770060696181, timestamp_type=0, key=None, value=b'{"state": 77}', checksum=None, serialized_key_size=-1, serialized_value_size=13, headers=())
+2026-02-02 11:31:36,265 - INFO - State updated to: 77
+```
