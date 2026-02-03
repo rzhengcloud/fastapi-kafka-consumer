@@ -93,6 +93,7 @@ Each instance of the Web API will have it's own consumer group (they share the s
 RZ notes:
 
 export KAFKA_TOPIC=test-topic
+
 run `python main.py`
 
 `docker-compose up -d`
