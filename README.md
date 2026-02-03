@@ -90,7 +90,7 @@ This is useful to guarantee that the consumer does not miss on previously publis
 Each instance of the Web API will have it's own consumer group (they share the same group name prefix + a random id), so that each instance of the API receives the same `state` updates.
   
 
-RZ notes:
+## RZ notes:
 
 export KAFKA_TOPIC=test-topic
 
